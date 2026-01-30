@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>手机烟花模拟器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #0c0c2e 0%, #1a1a3e 100%);
+            color: #fff;
+            min-height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+        }
+        
+        .container {
+            text-align: center;
+            padding: 15px;
+            z-index: 10;
+            width: 100%;
+            max-width: 500px;
+        }
+        
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 8px;
+            background: linear-gradient(to right, #ffb6c1, #f0e68c, #c0c0c0, #aec6cf);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+            padding: 0 10px;
+        }
+        
+        .subtitle {
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+            color: #b0b0d0;
+            padding: 0 10px;
+        }
+        
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 400px;
+            padding: 0 10px;
+        }
+        
+        .color-btn {
+            padding: 15px 10px;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 60px;
+        }
+        
+        .color-btn:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .color-btn i {
+            font-size: 1.2rem;
+            margin-bottom: 5px;
+        }
+        
+        #lightPink {
+            background-color: #ffb6c1;
+            color: #8a3a4a;
+        }
+        
+        #gold {
+            background-color: #ffd700;
+            color: #8a6700;
+        }
+        
+        #silver {
+            background-color: #c0c0c0;
+            color: #505050;
+        }
+        
+        #lightBlue {
+            background-color: #aec6cf;
+            color: #3a5a6a;
+        }
+        
+        #random {
+            background: linear-gradient(45deg, #ffb6c1, #ffd700, #c0c0c0, #aec6cf);
+            color: #333;
+            grid-column: span 2;
+        }
+        
+        .fireworks-info {
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 12px;
+            border-radius: 10px;
+            margin-top: 15px;
+            width: 100%;
+            font-size: 0.85rem;
+            line-height: 1.4;
+        }
+        
+        canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        .instructions {
+            position: fixed;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.8rem;
+            padding: 0 15px;
+            z-index: 10;
+        }
+        
+        .particle-count {
+            margin-top: 10px;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.9rem;
+        }
+        
+        .fireworks-count {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #ffd700;
+        }
+        
+        .mobile-tap-area {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 5;
+            pointer-events: auto;
+        }
+        
+        /* 防止长按菜单 */
+        .color-btn, .mobile-tap-area {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        
+        /* 针对小屏幕的额外调整 */
+        @media (max-width: 350px) {
+            h1 {
+                font-size: 1.6rem;
+            }
+            
+            .controls {
+                grid-template-columns: 1fr;
+            }
+            
+            #random {
+                grid-column: span 1;
+            }
+        }
+        
+        /* 横屏模式调整 */
+        @media (orientation: landscape) and (max-height: 500px) {
+            .container {
+                padding-top: 5px;
+                max-width: 100%;
+            }
+            
+            h1 {
+                font-size: 1.5rem;
+                margin-bottom: 5px;
+            }
+            
+            .subtitle {
+                display: none;
+            }
+            
+            .controls {
+                grid-template-columns: repeat(5, 1fr);
+                max-width: 100%;
+                gap: 8px;
+            }
+            
+            #random {
+                grid-column: span 1;
+            }
+            
+            .color-btn {
+                padding: 8px 5px;
+                min-height: 50px;
+                font-size: 0.8rem;
+            }
+            
+            .fireworks-info {
+                display: none;
+            }
+            
+            .instructions {
+                bottom: 5px;
+                font-size: 0.7rem;
+            }
+        }
+        
+        /* 防止iPhoneX等设备的刘海和Home指示器遮挡 */
+        .safe-area-top {
+            padding-top: constant(safe-area-inset-top);
+            padding-top: env(safe-area-inset-top);
+        }
+        
+        .safe-area-bottom {
+            padding-bottom: constant(safe-area-inset-bottom);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🎆 手机烟花模拟器 🎆</h1>
+        <p class="subtitle">点击屏幕任意位置或下方按钮释放烟花</p>
+        
+        <div class="controls">
+            <button class="color-btn" id="lightPink">
+                <i class="fas fa-fire"></i>
+                <span>浅粉色</span>
+            </button>
+            <button class="color-btn" id="gold">
+                <i class="fas fa-star"></i>
+                <span>金色</span>
+            </button>
+            <button class="color-btn" id="silver">
+                <i class="fas fa-snowflake"></i>
+                <span>银色</span>
+            </button>
+            <button class="color-btn" id="lightBlue">
+                <i class="fas fa-gem"></i>
+                <span>粉蓝色</span>
+            </button>
+            <button class="color-btn" id="random">
+                <i class="fas fa-random"></i>
+                <span>随机颜色</span>
+            </button>
+        </div>
+        
+        <div class="particle-count">
+            当前粒子数: <span id="particleCount" class="fireworks-count">0</span>
+        </div>
+        
+        <div class="fireworks-info">
+            <p>包含四种颜色：浅粉色、金色、银色、粉蓝色烟花效果。</p>
+            <p>点击屏幕任意位置释放烟花，点击按钮释放对应颜色烟花。</p>
+        </div>
+    </div>
+    
+    <!-- 移动端专用点击区域 -->
+    <div class="mobile-tap-area" id="mobileTapArea"></div>
+    
+    <canvas id="fireworksCanvas"></canvas>
+    
+    <div class="instructions">
+        轻触屏幕任意位置释放烟花 | 双击屏幕清除所有烟花
+    </div>
+
+    <script>
+        // 获取Canvas元素和上下文
+        const canvas = document.getElementById('fireworksCanvas');
+        const ctx = canvas.getContext('2d');
+        const mobileTapArea = document.getElementById('mobileTapArea');
+        
+        // 设置Canvas尺寸为窗口大小
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        
+        // 初始调整Canvas尺寸
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        window.addEventListener('orientationchange', function() {
+            // 设备旋转后重新调整
+            setTimeout(resizeCanvas, 100);
+        });
+        
+        // 烟花颜色定义
+        const colors = {
+            lightPink: {main: '#FFB6C1', light: '#FFE6EB'},
+            gold: {main: '#FFD700', light: '#FFF8B0'},
+            silver: {main: '#C0C0C0', light: '#F0F0F0'},
+            lightBlue: {main: '#AEC6CF', light: '#DAECF2'}
+        };
+        
+        // 当前激活的颜色
+        let activeColor = colors.lightPink;
+        
+        // 触摸相关变量
+        let lastTapTime = 0;
+        let tapTimeout;
+        
+        // 烟花粒子类
+        class Particle {
+            constructor(x, y, color, isExplosion = false) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.alpha = 1;
+                this.decay = Math.random() * 0.015 + 0.015;
+                
+                // 移动端优化：根据屏幕尺寸调整粒子大小
+                const screenFactor = Math.min(window.innerWidth, window.innerHeight) / 1000;
+                this.baseSize = isExplosion ? 4 : 2;
+                this.size = Math.random() * this.baseSize + this.baseSize * screenFactor;
+                
+                // 爆炸粒子有更大的初始速度
+                if (isExplosion) {
+                    this.speedX = Math.random() * 6 - 3;
+                    this.speedY = Math.random() * 6 - 5;
+                } else {
+                    this.speedX = Math.random() * 3 - 1.5;
+                    this.speedY = Math.random() * 3 - 1.5;
+                }
+                
+                // 重力效果
+                this.gravity = 0.1;
+            }
+            
+            update() {
+                this.speedY += this.gravity;
+                this.x += this.speedX;
+                this.y += this.speedY;
+                this.alpha -= this.decay;
+            }
+            
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.alpha;
+                ctx.beginPath();
+                
+                // 移动端优化：使用圆形和发光效果
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                
+                // 添加发光效果
+                ctx.shadowColor = this.color;
+                ctx.shadowBlur = 10 * (this.alpha);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+        
+        // 烟花类
+        class Firework {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.particles = [];
+                this.createParticles();
+            }
+            
+            createParticles() {
+                // 移动端优化：根据屏幕尺寸调整粒子数量
+                const screenFactor = Math.min(window.innerWidth, window.innerHeight) / 1000;
+                const particleCount = Math.floor(60 * screenFactor);
+                
+                for (let i = 0; i < particleCount; i++) {
+                    // 交替使用主色和亮色
+                    const color = i % 2 === 0 ? this.color.main : this.color.light;
+                    this.particles.push(new Particle(this.x, this.y, color, true));
+                }
+            }
+            
+            update() {
+                // 更新所有粒子
+                for (let i = 0; i < this.particles.length; i++) {
+                    this.particles[i].update();
+                    
+                    // 移除透明度为0的粒子
+                    if (this.particles[i].alpha <= 0) {
+                        this.particles.splice(i, 1);
+                        i--;
+                    }
+                }
+            }
+            
+            draw() {
+                // 绘制所有粒子
+                for (let particle of this.particles) {
+                    particle.draw();
+                }
+            }
+            
+            isFinished() {
+                return this.particles.length === 0;
+            }
+        }
+        
+        // 烟花管理器
+        class FireworksManager {
+            constructor() {
+                this.fireworks = [];
+                this.maxFireworks = 15; // 移动端限制同时显示的烟花数量
+            }
+            
+            addFirework(x, y, color) {
+                // 限制同时显示的烟花数量
+                if (this.fireworks.length >= this.maxFireworks) {
+                    this.fireworks.shift(); // 移除最旧的烟花
+                }
+                this.fireworks.push(new Firework(x, y, color));
+            }
+            
+            update() {
+                for (let i = 0; i < this.fireworks.length; i++) {
+                    this.fireworks[i].update();
+                    
+                    // 移除已完成的烟花
+                    if (this.fireworks[i].isFinished()) {
+                        this.fireworks.splice(i, 1);
+                        i--;
+                    }
+                }
+            }
+            
+            draw() {
+                for (let firework of this.fireworks) {
+                    firework.draw();
+                }
+            }
+            
+            clear() {
+                this.fireworks = [];
+            }
+            
+            getParticleCount() {
+                let count = 0;
+                for (let firework of this.fireworks) {
+                    count += firework.particles.length;
+                }
+                return count;
+            }
+        }
+        
+        // 初始化烟花管理器
+        const fireworksManager = new FireworksManager();
+        
+        // 更新粒子计数器显示
+        function updateParticleCount() {
+            document.getElementById('particleCount').textContent = fireworksManager.getParticleCount();
+        }
+        
+        // 创建烟花
+        function createFirework(x, y, color) {
+            fireworksManager.addFirework(x, y, color);
+            
+            // 添加触觉反馈（如果设备支持）
+            if (navigator.vibrate) {
+                navigator.vibrate(30);
+            }
+            
+            // 添加声音效果
+            playFireworkSound();
+        }
+        
+        // 播放烟花声音效果
+        function playFireworkSound() {
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(200, audioContext.currentTime + 0.3);
+                
+                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime); // 移动端音量调低
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.3);
+            } catch (e) {
+                // 如果音频上下文不可用，静默失败
+            }
+        }
+        
+        // 动画循环
+        function animate() {
+            // 清除画布，使用半透明黑色创造拖尾效果
+            ctx.fillStyle = 'rgba(12, 12, 46, 0.15)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 更新和绘制烟花
+            fireworksManager.update();
+            fireworksManager.draw();
+            
+            // 更新粒子计数显示
+            updateParticleCount();
+            
+            // 继续动画循环
+            requestAnimationFrame(animate);
+        }
+        
+        // 启动动画
+        animate();
+        
+        // 移动端触摸事件处理
+        function handleTap(x, y) {
+            createFirework(x, y, activeColor);
+            
+            // 添加点击反馈效果
+            const buttons = document.querySelectorAll('.color-btn');
+            buttons.forEach(btn => {
+                btn.style.transform = 'scale(0.98)';
+                setTimeout(() => {
+                    btn.style.transform = 'scale(1)';
+                }, 100);
+            });
+        }
+        
+        // 双击清除所有烟花
+        function handleDoubleTap() {
+            fireworksManager.clear();
+            
+            // 显示清除提示
+            const instructions = document.querySelector('.instructions');
+            const originalText = instructions.textContent;
+            instructions.textContent = "已清除所有烟花";
+            instructions.style.color = "#ffd700";
+            
+            setTimeout(() => {
+                instructions.textContent = originalText;
+                instructions.style.color = "rgba(255, 255, 255, 0.7)";
+            }, 1000);
+        }
+        
+        // 触摸事件监听
+        mobileTapArea.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            
+            const currentTime = new Date().getTime();
+            const tapLength = currentTime - lastTapTime;
+            
+            // 清除之前的单击超时
+            clearTimeout(tapTimeout);
+            
+            if (tapLength < 300 && tapLength > 0) {
+                // 双击事件
+                handleDoubleTap();
+            } else {
+                // 单击事件
+                tapTimeout = setTimeout(function() {
+                    const touch = e.touches[0] || e.changedTouches[0];
+                    handleTap(touch.clientX, touch.clientY);
+                }, 200);
+            }
+            
+            lastTapTime = currentTime;
+        }, { passive: false });
+        
+        // 防止触摸时滚动
+        mobileTapArea.addEventListener('touchmove', function(e) {
+            e.preventDefault();
+        }, { passive: false });
+        
+        // 点击事件监听（兼容非触摸设备）
+        mobileTapArea.addEventListener('click', function(e) {
+            handleTap(e.clientX, e.clientY);
+        });
+        
+        // 颜色按钮事件监听
+        document.getElementById('lightPink').addEventListener('click', (e) => {
+            e.stopPropagation();
+            activeColor = colors.lightPink;
+            createFirework(Math.random() * canvas.width * 0.8 + canvas.width * 0.1, 
+                          Math.random() * canvas.height * 0.6 + canvas.height * 0.2, 
+                          activeColor);
+        });
+        
+        document.getElementById('gold').addEventListener('click', (e) => {
+            e.stopPropagation();
+            activeColor = colors.gold;
+            createFirework(Math.random() * canvas.width * 0.8 + canvas.width * 0.1, 
+                          Math.random() * canvas.height * 0.6 + canvas.height * 0.2, 
+                          activeColor);
+        });
+        
+        document.getElementById('silver').addEventListener('click', (e) => {
+            e.stopPropagation();
+            activeColor = colors.silver;
+            createFirework(Math.random() * canvas.width * 0.8 + canvas.width * 0.1, 
+                          Math.random() * canvas.height * 0.6 + canvas.height * 0.2, 
+                          activeColor);
+        });
+        
+        document.getElementById('lightBlue').addEventListener('click', (e) => {
+            e.stopPropagation();
+            activeColor = colors.lightBlue;
+            createFirework(Math.random() * canvas.width * 0.8 + canvas.width * 0.1, 
+                          Math.random() * canvas.height * 0.6 + canvas.height * 0.2, 
+                          activeColor);
+        });
+        
+        document.getElementById('random').addEventListener('click', (e) => {
+            e.stopPropagation();
+            const colorKeys = Object.keys(colors);
+            const randomColorKey = colorKeys[Math.floor(Math.random() * colorKeys.length)];
+            activeColor = colors[randomColorKey];
+            
+            // 移动端优化：生成2-3个烟花
+            const fireworkCount = Math.floor(Math.random() * 2) + 2;
+            for (let i = 0; i < fireworkCount; i++) {
+                setTimeout(() => {
+                    createFirework(Math.random() * canvas.width * 0.8 + canvas.width * 0.1, 
+                                  Math.random() * canvas.height * 0.6 + canvas.height * 0.2, 
+                                  activeColor);
+                }, i * 100);
+            }
+        });
+        
+        // 初始加载时显示欢迎烟花
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                createFirework(canvas.width * 0.3, canvas.height * 0.5, colors.lightPink);
+            }, 300);
+            
+            setTimeout(() => {
+                createFirework(canvas.width * 0.7, canvas.height * 0.4, colors.gold);
+            }, 800);
+            
+            setTimeout(() => {
+                createFirework(canvas.width * 0.5, canvas.height * 0.6, colors.silver);
+            }, 1300);
+            
+            setTimeout(() => {
+                createFirework(canvas.width * 0.4, canvas.height * 0.3, colors.lightBlue);
+            }, 1800);
+        });
+        
+        // 防止移动端双击缩放
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function(event) {
+            const now = Date.now();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, { passive: false });
+    </script>
+</body>
+</html>
